@@ -81,7 +81,7 @@ open class TKSimpleSwitch: TKBaseSwitch {
         let frame = CGRect(x: 0, y: 0, width: bounds.width, height: bounds.height)
         let radius = bounds.height / 2 - lineWidth
         let roundedRectPath = UIBezierPath(roundedRect: frame.insetBy(dx: lineWidth, dy: lineWidth), cornerRadius: radius)
-        backgroundLayer.fillColor = stateToFillColor(true)
+        backgroundLayer.fillColor = stateToFillColor(false)
         backgroundLayer.strokeColor = lineColor.cgColor
         backgroundLayer.lineWidth = lineWidth
         backgroundLayer.path = roundedRectPath.cgPath
@@ -96,10 +96,10 @@ open class TKSimpleSwitch: TKBaseSwitch {
         point.x += (radius)
         switchControl.position = point
         switchControl.path = switchControlPath.cgPath
-        switchControl.lineCap = kCALineCapRound
+        switchControl.lineCap = CAShapeLayerLineCap.round
         switchControl.fillColor = nil
         switchControl.strokeColor = circleColor.cgColor
-        switchControl.lineWidth = innerLineWidth
+        switchControl.lineWidth = innerLineWidth - 5
         switchControl.strokeEnd = 0.0001
         layer.addSublayer(switchControl)
 
@@ -113,13 +113,13 @@ open class TKSimpleSwitch: TKBaseSwitch {
 
         // 线条运动动画
         let switchControlStrokeStartAnim = CAKeyframeAnimation(keyPath: "strokeStart")
-        switchControlStrokeStartAnim.values = value ? [1, 0, 0, 0] : [0, 0, 0, 1]
+        switchControlStrokeStartAnim.values = value ? [0, 0, 0, 1] : [1, 0, 0, 0]
         switchControlStrokeStartAnim.keyTimes = times as [NSNumber]?
         switchControlStrokeStartAnim.duration = duration
         switchControlStrokeStartAnim.isRemovedOnCompletion = true
 
         let switchControlStrokeEndAnim = CAKeyframeAnimation(keyPath: "strokeEnd")
-        switchControlStrokeEndAnim.values = value ? [1, 1, 1, 0] : [0, 1, 1, 1]
+        switchControlStrokeEndAnim.values = value ? [0, 1, 1, 1] : [1, 1, 1, 0]
         switchControlStrokeEndAnim.keyTimes = times as [NSNumber]?
         switchControlStrokeEndAnim.duration = duration
         switchControlStrokeEndAnim.isRemovedOnCompletion = true
@@ -132,7 +132,7 @@ open class TKSimpleSwitch: TKBaseSwitch {
                                           stateToFillColor(value)]
         backgroundFillColorAnim.keyTimes = [0, 0.5, 0.51, 1]
         backgroundFillColorAnim.duration = duration
-        backgroundFillColorAnim.fillMode = kCAFillModeForwards
+        backgroundFillColorAnim.fillMode = CAMediaTimingFillMode.forwards
         backgroundFillColorAnim.isRemovedOnCompletion = false
 
         // 旋转动画
@@ -145,7 +145,7 @@ open class TKSimpleSwitch: TKBaseSwitch {
         // 动画组
         let switchControlChangeStateAnim: CAAnimationGroup = CAAnimationGroup()
         switchControlChangeStateAnim.animations = [switchControlStrokeStartAnim, switchControlStrokeEndAnim]
-        switchControlChangeStateAnim.fillMode = kCAFillModeForwards
+        switchControlChangeStateAnim.fillMode = CAMediaTimingFillMode.forwards
         switchControlChangeStateAnim.isRemovedOnCompletion = false
         switchControlChangeStateAnim.duration = duration
 

@@ -13,20 +13,23 @@ public typealias TKSwitchValueChangeHook = (_ value: Bool) -> Void
 // 自定义 Switch 基类
 @IBDesignable
 open class TKBaseSwitch: UIControl {
+    open var customEnable: Bool = true
 
     // MARK: - Property
     open var valueChange: TKSwitchValueChangeHook?
+    open var disableTap: (()->Void)? = nil
     @IBInspectable open var animateDuration: Double = 0.4
     @IBInspectable open var isOn: Bool {
         set {
             on = newValue
+            changeValueAnimate(isOn, duration: 0)
         }
         get {
             return on
         }
     }
 
-    internal var on: Bool = true
+    internal var on: Bool = false
     internal var sizeScale: CGFloat {
         return min(self.bounds.width, self.bounds.height) / 100.0
     }
@@ -55,7 +58,8 @@ open class TKBaseSwitch: UIControl {
         guard on != isOn else {
             return
         }
-        toggleValue()
+        self.on.toggle()
+        changeValueAnimate(isOn, duration: animate ? animateDuration : 0)
     }
 
     // MARK: - Init
@@ -82,19 +86,23 @@ open class TKBaseSwitch: UIControl {
     }
 
     internal func setUpView() {
-        let tap = UITapGestureRecognizer(target: self, action: #selector(TKBaseSwitch.toggleValue))
+        let tap = UITapGestureRecognizer(target: self, action: #selector(TKBaseSwitch.tapToggleValue))
         self.addGestureRecognizer(tap)
 
         for view in self.subviews {
             view.removeFromSuperview()
         }
     }
-
-    @objc internal func toggleValue() {
-        self.on.toggle()
-        valueChange?(!isOn)
-        sendActions(for: UIControlEvents.valueChanged)
-        changeValueAnimate(isOn, duration: animateDuration)
+    
+    @objc internal func tapToggleValue() {
+        if customEnable {
+            self.on.toggle()
+            valueChange?(isOn)
+            sendActions(for: UIControl.Event.valueChanged)
+            changeValueAnimate(isOn, duration: animateDuration)
+        } else {
+            disableTap?()
+        }
     }
 
     internal func changeValueAnimate(_ value: Bool, duration: Double) {

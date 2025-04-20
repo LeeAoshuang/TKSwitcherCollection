@@ -15,8 +15,13 @@ import UIKit
 open class TKExchangeSwitch: TKBaseSwitch {
 
     // MARK: - Property
-    private var switchControl: TKExchangeCircleView?
-    private var backgroundLayer = CAShapeLayer()
+    open var isSmallStyle: Bool = false {
+        didSet {
+            resetView()
+        }
+    }
+    open var switchControl: TKExchangeCircleView?
+    open var backgroundLayer = CAShapeLayer()
 
     @IBInspectable open var lineColor = UIColor(white: 0.95, alpha: 1) {
         didSet {
@@ -43,9 +48,42 @@ open class TKExchangeSwitch: TKBaseSwitch {
     }
 
     // MARK: - Getter
-    var lineWidth: CGFloat {
+    open var lineWidth: CGFloat {
         return CGFloat(lineSize) * sizeScale
     }
+    
+    open var onText: String = "" {
+        didSet {
+            resetView()
+        }
+    }
+    open var onTextColor: UIColor = .clear {
+        didSet {
+            resetView()
+        }
+    }
+    open var onTextFont: UIFont = UIFont.systemFont(ofSize: 12) {
+        didSet {
+            resetView()
+        }
+    }
+    open var offText: String = "" {
+        didSet {
+            resetView()
+        }
+    }
+    open var offTextColor: UIColor = .clear {
+        didSet {
+            resetView()
+        }
+    }
+    open var offTextFont: UIFont = UIFont.systemFont(ofSize: 12) {
+        didSet {
+            resetView()
+        }
+    }
+    private let onLabel = UILabel()
+    private let offLabel = UILabel()
 
     // MARK: - Init
 
@@ -64,16 +102,31 @@ open class TKExchangeSwitch: TKBaseSwitch {
         backgroundLayer.fillColor = lineColor.cgColor
         backgroundLayer.strokeColor = lineColor.cgColor
         backgroundLayer.lineWidth = self.bounds.height
-        backgroundLayer.lineCap = kCALineCapRound
+        backgroundLayer.lineCap = CAShapeLayerLineCap.round
         backgroundLayer.path = backLayerPath.cgPath
         layer.addSublayer(backgroundLayer)
 
         let switchRadius = bounds.height - lineWidth
-        let switchControl = TKExchangeCircleView(frame: CGRect(x: lineWidth / 2, y: lineWidth / 2, width: switchRadius, height: switchRadius))
+        let width = (bounds.width - lineWidth)/2
+        let switchControl = TKExchangeCircleView(frame: CGRect(x: lineWidth / 2, y: lineWidth / 2, width: width, height: switchRadius), isSmallStyle: isSmallStyle)
         switchControl.onLayer.fillColor = onColor.cgColor
         switchControl.offLayer.fillColor = offColor.cgColor
         addSubview(switchControl)
         self.switchControl = switchControl
+        
+        onLabel.center = CGPoint(x: self.bounds.width/4, y: self.bounds.height/2)
+        onLabel.text = onText
+        onLabel.textColor = onTextColor
+        onLabel.font = onTextFont
+        onLabel.sizeToFit()
+        addSubview(onLabel)
+        
+        offLabel.center = CGPoint(x: self.bounds.width/4*3, y: self.bounds.height/2)
+        offLabel.text = offText
+        offLabel.textColor = offTextColor
+        offLabel.font = offTextFont
+        offLabel.sizeToFit()
+        addSubview(offLabel)
     }
 
     // MARK: - Animate
@@ -83,7 +136,7 @@ open class TKExchangeSwitch: TKBaseSwitch {
         guard var frame = self.switchControl?.frame else {
             return
         }
-        frame.origin.x = value ? lineWidth / 2 : (self.bounds.width - self.bounds.height + lineWidth / 2)
+        frame.origin.x = value ? lineWidth / 2 : ((self.bounds.width - lineWidth/2) / 2)
 
         let switchControlStrokeStartAnim = CAKeyframeAnimation(keyPath: "strokeStart")
         switchControlStrokeStartAnim.values = [0, 0.45, 0.45, 0]
@@ -99,15 +152,30 @@ open class TKExchangeSwitch: TKBaseSwitch {
 
         let switchControlChangeStateAnim: CAAnimationGroup = CAAnimationGroup()
         switchControlChangeStateAnim.animations = [switchControlStrokeStartAnim, switchControlStrokeEndAnim]
-        switchControlChangeStateAnim.fillMode = kCAFillModeForwards
+        switchControlChangeStateAnim.fillMode = CAMediaTimingFillMode.forwards
         switchControlChangeStateAnim.isRemovedOnCompletion = false
         switchControlChangeStateAnim.duration = duration
 
         backgroundLayer.add(switchControlChangeStateAnim, forKey: "SwitchBackground")
         switchControl?.exchangeAnimate(value, duration: duration)
-
+        
+        onLabel.alpha = 0
+        offLabel.alpha = 0
         UIView.animate(withDuration: duration, animations: { () -> Void in
             self.switchControl?.frame = frame
+            self.onLabel.alpha = 1
+            self.offLabel.alpha = 1
+            if value {
+                self.onLabel.textColor = self.onTextColor
+                self.onLabel.font = self.onTextFont
+                self.offLabel.textColor = self.offTextColor
+                self.offLabel.font = self.offTextFont
+            } else {
+                self.onLabel.textColor = self.offTextColor
+                self.onLabel.font = self.offTextFont
+                self.offLabel.textColor = self.onTextColor
+                self.offLabel.font = self.onTextFont
+            }
         })
     }
 }
@@ -133,40 +201,57 @@ extension TKExchangeSwitch {
     }
 }
 
-private class TKExchangeCircleView: UIView {
+extension CGRect {
+    init(center: CGPoint, size: CGSize) {
+        let origin = CGPoint(x: center.x - size.width / 2.0, y: center.y - size.height / 2.0)
+        self.init(origin: origin, size: size)
+    }
+}
+
+open class TKExchangeCircleView: UIView {
 
     // MARK: - Property
-    var onLayer: CAShapeLayer = CAShapeLayer()
-    var offLayer: CAShapeLayer = CAShapeLayer()
+    open var onLayer: CAShapeLayer = CAShapeLayer()
+    open var offLayer: CAShapeLayer = CAShapeLayer()
+    private var isSmallStyle: Bool
 
     // MARK: - Init
-    override init(frame: CGRect) {
+    init(frame: CGRect, isSmallStyle: Bool = false) {
+        self.isSmallStyle = isSmallStyle
         super.init(frame: frame)
         setUpLayer()
     }
-
-    required init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-        setUpLayer()
+    
+    required public init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
-
+    
     // MARK: - Private Func
     fileprivate func setUpLayer() {
         let radius = min(self.bounds.width, self.bounds.height)
+        let width = self.bounds.width
 
-        offLayer.frame = CGRect(x: 0, y: 0, width: radius, height: radius)
-        offLayer.path = UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: radius, height: radius)).cgPath
+        let path: UIBezierPath
+        if isSmallStyle {
+            let newRadius = radius/2
+            path = UIBezierPath(ovalIn: CGRect(x: width/2-newRadius/2, y: self.bounds.height/2-newRadius/2, width: newRadius, height: newRadius))
+        } else {
+            path = UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: width, height: radius), cornerRadius: radius/2)
+        }
+        
+        offLayer.frame = CGRect(x: 0, y: 0, width: width, height: radius)
+        offLayer.path = path.cgPath
         offLayer.transform = CATransform3DMakeScale(0, 0, 1)
         self.layer.addSublayer(offLayer)
 
-        onLayer.frame = CGRect(x: 0, y: 0, width: radius, height: radius)
-        onLayer.path = UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: radius, height: radius)).cgPath
+        onLayer.frame = CGRect(x: 0, y: 0, width: width, height: radius)
+        onLayer.path = path.cgPath
         self.layer.addSublayer(onLayer)
     }
 
     func exchangeAnimate(_ value: Bool, duration: Double) {
 
-        let fillMode: String = kCAFillModeForwards
+        let fillMode = CAMediaTimingFillMode.forwards
 
         let hideValues = [NSValue(caTransform3D: CATransform3DMakeScale(0, 0, 1)),
                           NSValue(caTransform3D: CATransform3DIdentity)]
